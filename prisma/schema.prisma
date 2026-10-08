@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  INVESTOR
+  PARTNER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionCategory {
+  HAIRCUT
+  MAKEUP
+  PRODUCTS
+  RENT
+  UTILITIES
+  SUPPLIES
+  OTHER
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  transactions Transaction[]
+}
+
+model Business {
+  id           String         @id @default(cuid())
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  memberships  Membership[]
+  investments  Investment[]
+  transactions Transaction[]
+}
+
+model Membership {
+  id           String         @id @default(cuid())
+  userId       String
+  businessId   String
+  role         MembershipRole
+  sharePercent Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business     Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+}
+
+model Investment {
+  id         String   @id @default(cuid())
+  businessId String
+  amountCents Int
+  investedOn String
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id          String              @id @default(cuid())
+  businessId  String
+  createdById String
+  type        TransactionType
+  category    TransactionCategory
+  amountCents Int
+  occurredOn  String
+  note        String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  business    Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([businessId, occurredOn])
+}
